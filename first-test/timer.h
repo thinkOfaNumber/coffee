@@ -10,7 +10,7 @@ private:
 
 public:
   bool Expired();
-  void StartOnce(unsigned long length);
+  void StartOnce(unsigned long milliSeconds);
   void Reset();
 };
 

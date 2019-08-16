@@ -7,10 +7,10 @@ bool Timer::Expired() {
    return millis() > expireTime;
 }
 
-void Timer::StartOnce(unsigned long length) {
+void Timer::StartOnce(unsigned long milliSeconds) {
   if (started)
     return;
-  expireTime = millis() + length;
+  expireTime = millis() + milliSeconds;
   started = true;
 }
 
