@@ -24,10 +24,11 @@
 static const uint8_t GROUP_SWITCH = D0;
 static const uint8_t TANK_WATER = D1;
 static const uint8_t BOILER_WATER = D2;
-static const uint8_t AT_PRESSURE = D3;
+// can't use D3 for input as low == bootloader
+static const uint8_t AT_PRESSURE = D5;
 // output
-static const uint8_t ELEMENT = D4;
-static const uint8_t PUMP = D5;
+static const uint8_t ELEMENT = D4; // element at D4 with LED_BUILTIN
+static const uint8_t PUMP = D3;
 static const uint8_t SOLENOID = D6;
 
 #endif

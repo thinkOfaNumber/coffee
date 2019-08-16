@@ -30,7 +30,7 @@ public:
   Coffee();
   void Run();
   void SetInputs(struct IO);
-  void GetOutputs(struct IO );
+  void GetOutputs(struct IO &);
 };
 } // namespace idb
 

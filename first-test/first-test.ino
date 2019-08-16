@@ -5,6 +5,10 @@
 #include "settings.h";
 
 // https://www.arduino.cc/en/Reference/Libraries
+extern "C" {
+#include "user_interface.h"
+}
+
 
 using namespace idb;
 
@@ -36,8 +40,10 @@ void setup() {
 }
 
 void printState(struct IO io) {
+  uint32_t free = system_get_free_heap_size();
   Serial.printf("Group %d; Tank %d; BoilerLevel %d; Pressure %d\n", io.GroupSwitch, io.TankWater, io.BoilerWater, io.AtPressure);
   Serial.printf("Element %d; Pump %d; Solenoid %d\n", io.Element, io.Pump, io.Solenoid);
+  Serial.printf("Free mem %d\n", free);
 }
 
 void loop() {

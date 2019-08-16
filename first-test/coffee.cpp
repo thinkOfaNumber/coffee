@@ -41,7 +41,7 @@ void Coffee::SetInputs(struct IO io) {
     _boilerWater = io.BoilerWater;
 }
 
-void Coffee::GetOutputs(struct IO io) {
+void Coffee::GetOutputs(struct IO &io) {
     io.Element = _element;
     io.Pump = _pump;
     io.Solenoid = _solenoid;
