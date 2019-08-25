@@ -12,6 +12,7 @@ public:
   bool Expired();
   void StartOnce(unsigned long milliSeconds);
   void Reset();
+  bool ExpiredRunReset();
 };
 
 } // namespace idb

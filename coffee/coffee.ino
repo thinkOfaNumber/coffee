@@ -3,6 +3,7 @@
 #include "timer.h";
 #include "coffee.h";
 #include "settings.h";
+#include "IOMapper.h";
 
 // https://www.arduino.cc/en/Reference/Libraries
 extern "C" {
@@ -15,6 +16,7 @@ using namespace idb;
 Timer *controlLoop;
 Timer *debugLoop;
 Coffee *controller;
+IOMapper *ioMapper;
 struct IO io;
 
 void setup() {
@@ -35,6 +37,7 @@ void setup() {
   controlLoop = new Timer();
   debugLoop = new Timer();
   controller = new Coffee();
+  ioMapper = new ioMapper();
   
   Serial.printf("Setup finished...\n");
 }
@@ -51,24 +54,15 @@ void loop() {
 
   controlLoop->StartOnce(100);
   debugLoop->StartOnce(2000);
-  if (controlLoop->Expired()) {
-    controlLoop->Reset();
-    io.GroupSwitch = digitalRead(GROUP_SWITCH);
-    io.TankWater = digitalRead(TANK_WATER);
-    io.BoilerWater = digitalRead(BOILER_WATER);
-    io.AtPressure = digitalRead(AT_PRESSURE);
-    
+  if (controlLoop->ExpiredRunReset()) {
+    ioMapper.ReadInputs(io)
     controller->SetInputs(io);
     controller->Run();
     controller->GetOutputs(io);
-
-    digitalWrite(PUMP, io.Pump);
-    digitalWrite(SOLENOID, io.Solenoid);
-    digitalWrite(ELEMENT, io.Element);
+    ioMapper->SetOutputs(io);
   }
 
-  if (debugLoop->Expired()) {
-    debugLoop->Reset();
+  if (debugLoop->ExpiredRunReset()) {
     printState(io);
   }
 }
