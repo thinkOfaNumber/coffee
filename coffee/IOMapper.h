@@ -1,7 +1,7 @@
-#ifndef __IOMapper_h_
-#define __IOMapper_h_
+#ifndef __iomapper_h_
+#define __iomapper_h_
 
-#include "variable.h"
+#include "variable.cpp"
 #include "coffee.h"
 
 namespace idb {
@@ -9,14 +9,14 @@ namespace idb {
     class IOMapper {
         private:
         // inputs
-        Variable<bool> *AtPressure;
-        Variable<bool> *GroupSwitch;
-        Variable<bool> *TankWater;
-        Variable<bool> *BoilerWater;
+        Variable<bool> *_atPressure;
+        Variable<bool> *_groupSwitch;
+        Variable<bool> *_tankWater;
+        Variable<bool> *_boilerWater;
         // outputs
-        Variable<bool> *Pump;
-        Variable<bool> *Solenoid;
-        Variable<bool> *Element;
+        Variable<bool> *_pump;
+        Variable<bool> *_solenoid;
+        Variable<bool> *_element;
 
         public:
         IOMapper();

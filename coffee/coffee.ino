@@ -3,7 +3,7 @@
 #include "timer.h"
 #include "coffee.h"
 #include "settings.h"
-#include "IOMapper.h"
+#include "iomapper.h"
 
 // https://www.arduino.cc/en/Reference/Libraries
 extern "C" {
