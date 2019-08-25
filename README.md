@@ -41,6 +41,8 @@ b)	When the lever is lowered, the pump must be switched off and the solenoid rel
  
 ## Notes
 Growl for iOS notifications
+
 Arduino SSR
+
 diagram
 
