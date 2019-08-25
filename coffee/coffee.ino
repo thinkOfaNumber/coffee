@@ -1,9 +1,9 @@
 #include <Arduino.h>
 
-#include "timer.h";
-#include "coffee.h";
-#include "settings.h";
-#include "IOMapper.h";
+#include "timer.h"
+#include "coffee.h"
+#include "settings.h"
+#include "IOMapper.h"
 
 // https://www.arduino.cc/en/Reference/Libraries
 extern "C" {
@@ -37,7 +37,7 @@ void setup() {
   controlLoop = new Timer();
   debugLoop = new Timer();
   controller = new Coffee();
-  ioMapper = new ioMapper();
+  ioMapper = new IOMapper();
   
   Serial.printf("Setup finished...\n");
 }
@@ -55,7 +55,7 @@ void loop() {
   controlLoop->StartOnce(100);
   debugLoop->StartOnce(2000);
   if (controlLoop->ExpiredRunReset()) {
-    ioMapper.ReadInputs(io)
+    ioMapper->ReadInputs(io);
     controller->SetInputs(io);
     controller->Run();
     controller->GetOutputs(io);

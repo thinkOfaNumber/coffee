@@ -1,7 +1,7 @@
 #ifndef __IOMapper_h_
 #define __IOMapper_h_
 
-#include "lib/variable.h"
+#include "variable.h"
 #include "coffee.h"
 
 namespace idb {
@@ -17,8 +17,6 @@ namespace idb {
         Variable<bool> *Pump;
         Variable<bool> *Solenoid;
         Variable<bool> *Element;
-
-        IO _io;
 
         public:
         IOMapper();

@@ -1,11 +1,11 @@
 #include <Arduino.h>
 
 #include "IOMapper.h"
-#include "coffee.h"
+#include "settings.h"
 
 using namespace idb;
 
-void IOMapper::IOMapper() {
+IOMapper::IOMapper() {
   // inputs
   AtPressure = new Variable<bool>();
   GroupSwitch = new Variable<bool>();

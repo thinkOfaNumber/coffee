@@ -16,11 +16,10 @@ void Timer::StartOnce(unsigned long milliSeconds) {
 
 void Timer::Reset() { started = false; }
 
-void Timer::ExpiredRunReset() {
+bool Timer::ExpiredRunReset() {
   bool expired = Expired();
   if (expired) {
     Reset();
-    StartOnce();
   }
   return expired;
 }
