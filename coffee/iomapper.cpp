@@ -34,7 +34,7 @@ void IOMapper::SetOutputs(IO &io) {
     // set the Variable classes
     _pump->Set(io.Pump);
     _solenoid->Set(io.Solenoid);
-    _element->Set(io.Element);
+    _element->Set(!io.Element); // because D4 has a pullup on the output. Is there a better way?
     // write the Variable class value in case they are in forced mode
     digitalWrite(PUMP, _pump->Get());
     digitalWrite(SOLENOID, _solenoid->Get());
