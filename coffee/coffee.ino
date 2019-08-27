@@ -22,10 +22,10 @@ struct IO io;
 void setup() {
   // put your setup code here, to run once:
 
-  pinMode(GROUP_SWITCH, INPUT);
-  pinMode(TANK_WATER, INPUT);
-  pinMode(BOILER_WATER, INPUT);
-  pinMode(AT_PRESSURE, INPUT);
+  pinMode(GROUP_SWITCH, INPUT_PULLUP);
+  pinMode(TANK_WATER, INPUT_PULLUP);
+  pinMode(BOILER_WATER, INPUT_PULLUP);
+  pinMode(AT_PRESSURE, INPUT_PULLUP);
 
   pinMode(ELEMENT, OUTPUT);
   pinMode(PUMP, OUTPUT);
