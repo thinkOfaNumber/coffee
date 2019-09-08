@@ -52,3 +52,5 @@ https://www.reddit.com/r/esp8266/comments/49k38s/esp8266_pulluppulldown_enabledi
 
 LED overview:
 https://learn.adafruit.com/all-about-leds
+
+8266 micro info: https://tttapa.github.io/ESP8266/Chap04%20-%20Microcontroller.html
