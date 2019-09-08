@@ -5,28 +5,18 @@
 
 // setup I/O etc. to use better names
 
-// WeMos D1 mini pins:
-// D0   = 16;
-// D1   = 5;
-// D2   = 4;
-// D3   = 0; 10k pullup (i.e. close to ground) LOW=bootloader
-// D4   = 2; 10k pullup (i.e. close to ground) LED_BUILTIN
-// D5   = 14;
-// D6   = 12;
-// D7   = 13;
-// D8   = 15; 10k pulldown (i.e. close to Vcc 3.3)
-// RX   = 3;
-// TX   = 1;
+//                                = D0; // damaged?
+//                   display      = D1; // display SCL - not configurable; (relay default)
+//                   display      = D2; // display SDA - not configurable
+// static const uint8_t PUMP      = D3; // 10k pullup; output only because LOW=bootloader
+static const uint8_t ELEMENT      = D4; // 10k pullup; output; LED_BUILTIN
+static const uint8_t AT_PRESSURE  = D5; // input
+static const uint8_t BOILER_WATER = D6; // input
+static const uint8_t GROUP_SWITCH = D7; // input
+static const uint8_t TANK_WATER   = D8; // 10k pulldown; input
 
-// input
-static const uint8_t GROUP_SWITCH = D7;
-static const uint8_t TANK_WATER = D3;
-static const uint8_t BOILER_WATER = D2;
-// can't use D3 for input as low == bootloader
-static const uint8_t AT_PRESSURE = D5;
-// output
-static const uint8_t ELEMENT = D4; // element at D4 with LED_BUILTIN
-static const uint8_t PUMP = D1;
-static const uint8_t SOLENOID = D6;
+// eventually these will be changed to fit above:
+static const uint8_t PUMP         = D1; // output; wemos relay default
+static const uint8_t SOLENOID     = D2; // output
 
 #endif
