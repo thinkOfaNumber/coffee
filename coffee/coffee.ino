@@ -23,14 +23,14 @@ void setup() {
   // put your setup code here, to run once:
 
   pinMode(GROUP_SWITCH, INPUT_PULLUP);
-  pinMode(TANK_WATER, INPUT); // has hard-wired pulldown on PCB
+  pinMode(TANK_WATER, INPUT_PULLUP);
   pinMode(BOILER_WATER, INPUT_PULLUP);
-  pinMode(AT_PRESSURE, INPUT_PULLUP);
+  pinMode(AT_PRESSURE, INPUT_PULLDOWN_16); // only this GPIO16/D0 has internal pulldown
 
   pinMode(ELEMENT, OUTPUT);
   pinMode(PUMP, OUTPUT);
   pinMode(SOLENOID, OUTPUT);
-  
+
   Serial.begin(115200);
   Serial.println();
 
