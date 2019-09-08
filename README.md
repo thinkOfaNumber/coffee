@@ -49,3 +49,6 @@ diagram
 
 ESP8266 pullup/down resistors vs WeMos on-board ones:
 https://www.reddit.com/r/esp8266/comments/49k38s/esp8266_pulluppulldown_enabledisable_functions/
+
+LED overview:
+https://learn.adafruit.com/all-about-leds
