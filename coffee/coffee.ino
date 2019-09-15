@@ -4,6 +4,7 @@
 #include "coffee.h"
 #include "settings.h"
 #include "iomapper.h"
+#include "ewifi.h"
 
 // https://www.arduino.cc/en/Reference/Libraries
 extern "C" {
@@ -17,6 +18,7 @@ Timer *controlLoop;
 Timer *debugLoop;
 Coffee *controller;
 IOMapper *ioMapper;
+eWiFi *ewifi;
 struct IO io;
 
 void setup() {
@@ -38,7 +40,11 @@ void setup() {
   debugLoop = new Timer();
   controller = new Coffee();
   ioMapper = new IOMapper();
-  
+
+  Serial.print("Connecting to ");
+  Serial.println(ewifi->GetSsid());
+  ewifi->Setup();
+
   Serial.printf("Setup finished...\n");
 }
 
@@ -64,5 +70,6 @@ void loop() {
 
   if (debugLoop->ExpiredRunReset()) {
     printState(io);
+    ewifi->PrintLog();
   }
 }
