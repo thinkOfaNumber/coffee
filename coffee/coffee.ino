@@ -40,6 +40,7 @@ void setup() {
   debugLoop = new Timer();
   controller = new Coffee();
   ioMapper = new IOMapper();
+  ewifi = new eWiFi();
 
   Serial.print("Connecting to ");
   Serial.println(ewifi->GetSsid());
@@ -64,6 +65,7 @@ void loop() {
     ioMapper->ReadInputs(io);
     controller->SetInputs(io);
     controller->Run();
+    ewifi->Run();
     controller->GetOutputs(io);
     ioMapper->SetOutputs(io);
   }

@@ -54,3 +54,5 @@ LED overview:
 https://learn.adafruit.com/all-about-leds
 
 8266 micro info: https://tttapa.github.io/ESP8266/Chap04%20-%20Microcontroller.html
+
+WiFi samples: https://averagemaker.com/2018/04/how-to-set-up-wifi-on-a-wemos.html
