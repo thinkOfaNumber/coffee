@@ -3,6 +3,8 @@
 
 #include <ESP8266WiFi.h>
 #include "task.h"
+#include "variables.h"
+#include "Variable.cpp"
 
 namespace idb {
 
@@ -20,13 +22,16 @@ private:
     WiFiClient _client;
     eWiFiState _state;
     String _header;
+    Variables _variables;
 
     void CheckForWifi();
     void SetupServer();
     void Listen();
     void Talk();
+    void WriteElementHtml(bool value, char *name);
 
 public:
+    eWiFi();
     void Setup();
     void Run();
     void Debug() const;

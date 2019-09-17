@@ -16,6 +16,8 @@ const char* password = "YOUR-PASSWORD-HERE";
 
 using namespace idb;
 
+eWiFi::eWiFi() : _variables() {}
+
 void eWiFi::Setup() {
     Serial.print("Connecting to ");
     Serial.println(ssid);
@@ -113,36 +115,50 @@ void eWiFi::Talk() {
     _client.println("<!DOCTYPE html><html>");
     _client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
     _client.println("<link rel=\"icon\" href=\"data:,\">");
-    // CSS to style the on/off buttons
-    // Feel free to change the background-color and font-size attributes to fit your preferences
+    _client.println("");
     _client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-    _client.println(".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;");
-    _client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-    _client.println(".button2 {background-color: #77878A;}</style></head>");
-
-    // Web Page Heading
-    _client.println("<body><h1>Espresserver</h1>");
-
-    // Display current state, and ON/OFF buttons for GPIO 5
-    _client.println("<p>GPIO 5 - State " + output5State + "</p>");
-    // If the output5State is off, it displays the ON button
-    if (output5State=="off") {
-        _client.println("<p><a href=\"/5/on\"><button class=\"button\">ON</button></a></p>");
-    } else {
-        _client.println("<p><a href=\"/5/off\"><button class=\"button button2\">OFF</button></a></p>");
-    }
-
-    // Display current state, and ON/OFF buttons for GPIO 4
-    _client.println("<p>GPIO 4 - State " + output4State + "</p>");
-    // If the output4State is off, it displays the ON button
-    if (output4State=="off") {
-        _client.println("<p><a href=\"/4/on\"><button class=\"button\">ON</button></a></p>");
-    } else {
-        _client.println("<p><a href=\"/4/off\"><button class=\"button button2\">OFF</button></a></p>");
-    }
+    _client.println(".io { background-color: #195B6A; border: none; color: white; padding: 16px 40px;");
+    _client.println("text-decoration: none; font-size: 30px; margin: 2px; }");
+    _client.println(".button2 {background-color: #77878A;} .actions {margin-bottom: 40px;}");
+    _client.println(".badge { display: inline-block; padding: .25em .4em; font-size: 75%; font-weight: 700; line-height: 1;");
+    _client.println("text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25rem; transition: color .15s }");
+    _client.println(".badge-on { color: #fff; background-color: #4cbb17; }");
+    _client.println(".badge-off { color: #fff; background-color: #6c757d; }");
+    _client.println("</style>");
+    _client.println("</head>");
+    _client.println("<body>");
+    _client.println("<h1>Espresserver</h1>");
+    _client.println("<div style=\"float: left\">");
+    WriteElementHtml(_variables.Element.Get(), "Element");
+    WriteElementHtml(_variables.Pump.Get(), "Pump");
+    WriteElementHtml(_variables.Solenoid.Get(), "Solenoid");
+    _client.println("</div>");
+    _client.println("<div style=\"float: right\">");
+    WriteElementHtml(_variables.AtPressure.Get(), "At Pressure");
+    WriteElementHtml(_variables.GroupSwitch.Get(), "Group Switch");
+    WriteElementHtml(_variables.TankWater.Get(), "Tank Water");
+    WriteElementHtml(_variables.BoilerWater.Get(), "Boiler Water");
+    _client.println("</div>");
     _client.println("</body></html>");
 
     // The HTTP response ends with another blank line
     _client.println();
     _state = eWiFiState::Cleanup;
+}
+
+void eWiFi::WriteElementHtml(bool value, char *name) {
+    String badge = value ? "on" : "off";
+    String force = value ? "Off" : "On";
+    String display = value ? "ON" : "OFF";
+    _client.print("    <p><span class=\"io\">");
+    _client.print(name);
+    _client.print("<span class=\"badge badge-");
+    _client.print(badge);
+    _client.print("\">");
+    _client.print(display);
+    _client.println("</span></span></p>");
+    _client.print("    <p class=\"actions\"><a href=\"#\">Force ");
+    _client.print(force);
+    _client.print("</a> | <a href=\"#\">Release</a></p>");
+    _client.println("");
 }

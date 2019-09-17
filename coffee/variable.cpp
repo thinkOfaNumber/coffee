@@ -1,3 +1,5 @@
+#ifndef __variable_cpp_
+#define __variable_cpp_
 namespace idb {
     template <class T>
     class Variable {
@@ -49,3 +51,5 @@ namespace idb {
         return _forced;
     }
 }
+
+#endif
