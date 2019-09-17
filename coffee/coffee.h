@@ -1,21 +1,14 @@
 #ifndef __coffee_h_
 #define __coffee_h_
 
-namespace idb {
-struct IO {
-  // inputs
-  bool AtPressure;
-  bool GroupSwitch;
-  bool TankWater;
-  bool BoilerWater;
-  // outputs
-  bool Pump;
-  bool Solenoid;
-  bool Element;
-};
+#include "variables.h"
+#include "task.h"
 
-class Coffee {
+namespace idb {
+
+class Coffee : public Task {
 private:
+  Variables _variables;
   // inputs
   bool _atPressure;
   bool _groupSwitch;
@@ -29,8 +22,9 @@ private:
 public:
   Coffee();
   void Run();
-  void SetInputs(struct IO);
-  void GetOutputs(struct IO &);
+  void Debug() const;
+  void MapIn();
+  void MapOut();
 };
 } // namespace idb
 

@@ -1,14 +1,13 @@
+#include <Arduino.h>
+#include <user_interface.h>
 #include "coffee.h"
 
 using namespace idb;
 
-Coffee::Coffee() {
-    _pump = false;
-    _solenoid = false;
-    _element = false;
-}
+Coffee::Coffee() : _variables() {}
 
 void Coffee::Run() {
+    MapIn();
     // 5.1
     _element = !_atPressure;
 
@@ -32,17 +31,26 @@ void Coffee::Run() {
     if (!_boilerWater) {
         _element = false;
     }
+
+    MapOut();
 }
 
-void Coffee::SetInputs(struct IO io) {
-    _atPressure = io.AtPressure;
-    _groupSwitch = io.GroupSwitch;
-    _tankWater = io.TankWater;
-    _boilerWater = io.BoilerWater;
+void Coffee::Debug() const {
+  uint32_t free = system_get_free_heap_size();
+  Serial.printf("Group %d; Tank %d; BoilerLevel %d; Pressure %d\n", _groupSwitch, _tankWater, _boilerWater, _atPressure);
+  Serial.printf("Element %d; Pump %d; Solenoid %d\n", _element, _pump, _solenoid);
+  Serial.printf("Free mem %d\n", free);
 }
 
-void Coffee::GetOutputs(struct IO &io) {
-    io.Element = _element;
-    io.Pump = _pump;
-    io.Solenoid = _solenoid;
+void Coffee::MapIn() {
+    _atPressure = _variables.AtPressure.Get();
+    _groupSwitch = _variables.GroupSwitch.Get();
+    _tankWater = _variables.TankWater.Get();
+    _boilerWater = _variables.BoilerWater.Get();
+}
+
+void Coffee::MapOut() {
+    _variables.Element.Set(_element);
+    _variables.Pump.Set(_pump);
+    _variables.Solenoid.Set(_solenoid);
 }

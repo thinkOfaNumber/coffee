@@ -12,6 +12,8 @@ namespace idb {
         void Manual(T value);
         void Auto() const;
         bool IsAuto() const;
+        
+        friend class Inputs;
     };
 
     // can't split template definition from declaration for templates

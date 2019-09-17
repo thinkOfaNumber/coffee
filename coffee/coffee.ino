@@ -1,9 +1,11 @@
 #include <Arduino.h>
 
+#include "task.h"
 #include "timer.h"
 #include "coffee.h"
 #include "settings.h"
-#include "iomapper.h"
+#include "inputs.h"
+#include "outputs.h"
 #include "ewifi.h"
 
 // https://www.arduino.cc/en/Reference/Libraries
@@ -11,15 +13,18 @@ extern "C" {
 #include "user_interface.h"
 }
 
-
 using namespace idb;
 
-Timer *controlLoop;
-Timer *debugLoop;
-Coffee *controller;
-IOMapper *ioMapper;
-eWiFi *ewifi;
-struct IO io;
+const int numTasks = 4;
+Task *tasks[numTasks] = {
+  new Inputs(),
+  new Coffee(),
+  new eWiFi(),
+  new Outputs()
+};
+Timer controlLoop(100);
+Timer debugLoop(1000);
+uint32 cycle = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -36,42 +41,31 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
 
-  controlLoop = new Timer();
-  debugLoop = new Timer();
-  controller = new Coffee();
-  ioMapper = new IOMapper();
-  ewifi = new eWiFi();
-
-  Serial.print("Connecting to ");
-  Serial.println(ewifi->GetSsid());
-  ewifi->Setup();
+  for (int i = 0; i < numTasks; i++) {
+    tasks[i]->Setup();
+  }
 
   Serial.printf("Setup finished...\n");
-}
-
-void printState(struct IO io) {
-  uint32_t free = system_get_free_heap_size();
-  Serial.printf("Group %d; Tank %d; BoilerLevel %d; Pressure %d\n", io.GroupSwitch, io.TankWater, io.BoilerWater, io.AtPressure);
-  Serial.printf("Element %d; Pump %d; Solenoid %d\n", io.Element, io.Pump, io.Solenoid);
-  Serial.printf("Free mem %d\n", free);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  controlLoop->StartOnce(100);
-  debugLoop->StartOnce(2000);
-  if (controlLoop->ExpiredRunReset()) {
-    ioMapper->ReadInputs(io);
-    controller->SetInputs(io);
-    controller->Run();
-    ewifi->Run();
-    controller->GetOutputs(io);
-    ioMapper->SetOutputs(io);
+  controlLoop.StartOnce();
+  debugLoop.StartOnce();
+
+  if (controlLoop.Triggered()) {
+    cycle++;
+    for (int i = 0; i < numTasks; i++) {
+      tasks[i]->Run();
+    }
   }
 
-  if (debugLoop->ExpiredRunReset()) {
-    printState(io);
-    ewifi->PrintLog();
+  if (debugLoop.Triggered()) {
+    Serial.print("Debugging ");
+    Serial.println(cycle);
+    for (int i = 0; i < numTasks; i++) {
+      tasks[i]->Debug();
+    }
   }
 }

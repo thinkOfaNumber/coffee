@@ -3,23 +3,21 @@
 
 using namespace idb;
 
-bool Timer::Expired() {
-   return millis() > expireTime;
+Timer::Timer(unsigned long milliSeconds) {
+  time = milliSeconds;
 }
 
-void Timer::StartOnce(unsigned long milliSeconds) {
+bool Timer::Triggered() {
+   bool triggered = started && millis() > expireTime;
+   if (triggered) {
+    expireTime = millis() + time;
+   }
+   return triggered;
+}
+
+void Timer::StartOnce() {
   if (started)
     return;
-  expireTime = millis() + milliSeconds;
+  expireTime = millis() + time;
   started = true;
-}
-
-void Timer::Reset() { started = false; }
-
-bool Timer::ExpiredRunReset() {
-  bool expired = Expired();
-  if (expired) {
-    Reset();
-  }
-  return expired;
 }

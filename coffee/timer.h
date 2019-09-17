@@ -7,12 +7,12 @@ class Timer {
 private:
   unsigned long expireTime;
   bool started = false;
+  unsigned long time;
 
 public:
-  bool Expired();
-  void StartOnce(unsigned long milliSeconds);
-  void Reset();
-  bool ExpiredRunReset();
+  Timer(unsigned long milliSeconds);
+  bool Triggered();
+  void StartOnce();
 };
 
 } // namespace idb

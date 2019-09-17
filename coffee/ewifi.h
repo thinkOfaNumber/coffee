@@ -2,6 +2,7 @@
 #define __ewifi_h_
 
 #include <ESP8266WiFi.h>
+#include "task.h"
 
 namespace idb {
 
@@ -13,7 +14,7 @@ enum class eWiFiState {
     Cleanup
 };
 
-class eWiFi {
+class eWiFi : public Task {
 private:
     WiFiServer *_server;
     WiFiClient _client;
@@ -28,8 +29,7 @@ private:
 public:
     void Setup();
     void Run();
-    const char *GetSsid() const;
-    void PrintLog() const;
+    void Debug() const;
 };
 
 } // namespace idb

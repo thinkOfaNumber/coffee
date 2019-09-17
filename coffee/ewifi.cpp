@@ -17,6 +17,8 @@ const char* password = "YOUR-PASSWORD-HERE";
 using namespace idb;
 
 void eWiFi::Setup() {
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
     WiFi.hostname("coffee");
     WiFi.begin(ssid, password);
     _state = eWiFiState::NoWiFi;
@@ -50,11 +52,7 @@ void eWiFi::Run() {
     }
 }
 
-const char *eWiFi::GetSsid() const {
-    return ssid;
-}
-
-void eWiFi::PrintLog() const {
+void eWiFi::Debug() const {
     if (WiFi.status() == WL_CONNECTED) {
         Serial.print("IP address: ");
         Serial.print(WiFi.localIP());
@@ -123,7 +121,7 @@ void eWiFi::Talk() {
     _client.println(".button2 {background-color: #77878A;}</style></head>");
 
     // Web Page Heading
-    _client.println("<body><h1>ESP8266 Web Server</h1>");
+    _client.println("<body><h1>Espresserver</h1>");
 
     // Display current state, and ON/OFF buttons for GPIO 5
     _client.println("<p>GPIO 5 - State " + output5State + "</p>");
