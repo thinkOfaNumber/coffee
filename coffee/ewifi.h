@@ -8,27 +8,34 @@
 
 namespace idb {
 
+const int MaxHeaderSize = 200;
+
 enum class eWiFiState {
     NoWiFi = 0,
     Serving,
-    Listening,
-    Connected,
-    Cleanup
+    Listening
 };
 
 class eWiFi : public Task {
 private:
     WiFiServer *_server;
+    WiFiClient *_clients = new WiFiClient[2];
     WiFiClient _client;
     eWiFiState _state;
     String _header;
     Variables _variables;
+    char *_path = new char[MaxHeaderSize];
+    int nClients = 0;
 
     void CheckForWifi();
     void SetupServer();
-    void Listen();
-    void Talk();
-    void WriteElementHtml(bool value, char *name);
+    void ServeEventClients();
+    void Route(WiFiClient client);
+    bool ReadHeaders(WiFiClient client);
+    void ServeHtml(WiFiClient client);
+    void ServeEventInit(WiFiClient client);
+    void ServeError(WiFiClient client, const char * error);
+    void ClientLog(WiFiClient client, const char * msg);
 
 public:
     eWiFi();

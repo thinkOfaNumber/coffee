@@ -1,4 +1,5 @@
 #include <ESP8266WiFi.h>
+#include <string.h>
 #include "ewifi.h"
 /*
  * wifi-private.h only needs to contain:
@@ -37,20 +38,23 @@ void eWiFi::Run() {
             break;
 
         case eWiFiState::Listening:
-            Listen();
+            ServeEventClients();
+            _client = _server->available();
+            if (!_client) return;
+            Route(_client);
             break;
 
-        case eWiFiState::Connected:
-            Talk();
-            break;
+        // case eWiFiState::Connected:
+        //     Talk();
+        //     break;
 
-        case eWiFiState::Cleanup:
-            // Close the connection
-            _client.stop();
-            Serial.println("Client disconnected.");
-            Serial.println("");
-            _state = eWiFiState::Listening;
-            break;
+        // case eWiFiState::Cleanup:
+        //     // Close the connection
+        //     _client.stop();
+        //     Serial.println("Client disconnected.");
+        //     Serial.println("");
+        //     _state = eWiFiState::Listening;
+        //     break;
     }
 }
 
@@ -78,87 +82,106 @@ void eWiFi::SetupServer() {
     _state = eWiFiState::Listening;
 }
 
-void eWiFi::Listen() {
-    _client = _server->available();
-    if (!_client) return;
-    Serial.println("New Client.");
-    _state = eWiFiState::Connected;
-}
-
-void eWiFi::Talk() {
-    // this is sample code showing two I/O on the webpage
-    String output5State = "off";
-    String output4State = "off";
-    char *headers = new char[100];
-
-    if (!_client.connected()) {
-        _state = eWiFiState::Cleanup;
-        return;
+void eWiFi::Route(WiFiClient client) {
+    ClientLog(client, "New Client.");
+    bool success = ReadHeaders(client);
+    _path[99] = '\0'; // just in case
+    if (!success) {
+        ClientLog(client, "Header failure.");
+        _client.stop();
     }
-
-    while (_client.connected() && _client.available()) {
-        // read headers
-        _client.readBytesUntil('\n', headers, 100);
-        if (headers[0] == '\n') {
-            // empty line, so end of headers
+    else if (strcmp((const char *)_path, "/") == 0) {
+        ServeHtml(_client);
+        _client.stop();
+    }
+    else if (strcmp((const char *)_path, "/events.sse") == 0) {
+        if (nClients >= 2) {
+            ClientLog(client, "429 Too Many Requests.");
+            ServeError(_client, "429 Too Many Requests");
+            _client.stop();
+        }
+        else {
+            ServeEventInit(_client);
+            _clients[nClients++] = _client;
         }
     }
-
-    _client.println("HTTP/1.1 200 OK");
-    _client.println("Content-type: text/html");
-    _client.println("Connection: close");
-    _client.println();
-
-    // control and read I/O
-
-    // Display the HTML web page
-    _client.println("<!DOCTYPE html><html>");
-    _client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-    _client.println("<link rel=\"icon\" href=\"data:,\">");
-    _client.println("");
-    _client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-    _client.println(".io { background-color: #195B6A; border: none; color: white; padding: 16px 40px;");
-    _client.println("text-decoration: none; font-size: 30px; margin: 2px; }");
-    _client.println(".button2 {background-color: #77878A;} .actions {margin-bottom: 40px;}");
-    _client.println(".badge { display: inline-block; padding: .25em .4em; font-size: 75%; font-weight: 700; line-height: 1;");
-    _client.println("text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25rem; transition: color .15s }");
-    _client.println(".badge-on { color: #fff; background-color: #4cbb17; }");
-    _client.println(".badge-off { color: #fff; background-color: #6c757d; }");
-    _client.println("</style>");
-    _client.println("</head>");
-    _client.println("<body>");
-    _client.println("<h1>Espresserver</h1>");
-    _client.println("<div style=\"float: left\">");
-    WriteElementHtml(_variables.Element.Get(), "Element");
-    WriteElementHtml(_variables.Pump.Get(), "Pump");
-    WriteElementHtml(_variables.Solenoid.Get(), "Solenoid");
-    _client.println("</div>");
-    _client.println("<div style=\"float: right\">");
-    WriteElementHtml(_variables.AtPressure.Get(), "At Pressure");
-    WriteElementHtml(_variables.GroupSwitch.Get(), "Group Switch");
-    WriteElementHtml(_variables.TankWater.Get(), "Tank Water");
-    WriteElementHtml(_variables.BoilerWater.Get(), "Boiler Water");
-    _client.println("</div>");
-    _client.println("</body></html>");
-
-    // The HTTP response ends with another blank line
-    _client.println();
-    _state = eWiFiState::Cleanup;
 }
 
-void eWiFi::WriteElementHtml(bool value, char *name) {
-    String badge = value ? "on" : "off";
-    String force = value ? "Off" : "On";
-    String display = value ? "ON" : "OFF";
-    _client.print("    <p><span class=\"io\">");
-    _client.print(name);
-    _client.print("<span class=\"badge badge-");
-    _client.print(badge);
-    _client.print("\">");
-    _client.print(display);
-    _client.println("</span></span></p>");
-    _client.print("    <p class=\"actions\"><a href=\"#\">Force ");
-    _client.print(force);
-    _client.print("</a> | <a href=\"#\">Release</a></p>");
-    _client.println("");
+bool eWiFi::ReadHeaders(WiFiClient client) {
+    char *header = new char[MaxHeaderSize+1];
+    _path[0] = '\0';
+
+    if (!client.connected()) {
+        delete[] header;
+        return false;
+    }
+
+    while (client.connected() && client.available()) {
+        // read headers
+        int nBytes = client.readBytesUntil('\n', header, MaxHeaderSize);
+        header[nBytes] = '\0';
+        if (nBytes > 0) {
+            ClientLog(client, header);
+        }
+        if (nBytes == MaxHeaderSize) {
+            // contains no newline - header too large
+            ClientLog(client, "413 Request Entity Too Large");
+            ServeError(client, "413 Request Entity Too Large");
+            delete[] header;
+            return false;
+        }
+        
+        if (strncmp(header, "GET ", 4) == 0) {
+            strncpy(_path, header+4, MaxHeaderSize-4);
+            _path = "/"; // todo
+            ClientLog(client, _path);
+        }
+    }
+    delete[] header;
+    return true;
+}
+
+void eWiFi::ServeHtml(WiFiClient client) {
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-type: text/html");
+    client.println("Connection: close");
+    client.println();
+
+    client.println("<html><body><h1>Hello World</h1></body></head>");
+    // The HTTP response ends with another blank line
+    client.println();
+}
+
+void eWiFi::ServeError(WiFiClient client, const char * error) {
+    client.print("HTTP/1.1 ");
+    client.println(error);
+    client.println("Content-type: text/html");
+    client.println("Connection: close");
+    client.println();
+
+    client.print("<html><body><h1>");
+    client.print(error);
+    client.println("</h1></body></head>");
+    client.println();
+}
+
+void eWiFi::ServeEventInit(WiFiClient client) {
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-type: text/event-stream");
+    client.println("Cache-Control: no-cache");
+    client.println("Connection: keep-alive");
+    client.println();
+
+    client.println("<html><body><h1>Too Many Requests</h1></body></head>");
+    client.println();
+}
+
+void eWiFi::ServeEventClients() {
+    // nothing for now
+}
+
+void eWiFi::ClientLog(WiFiClient client, const char * msg) {
+    Serial.print(client.remoteIP());
+    Serial.print(": ");
+    Serial.println(msg);
 }
