@@ -43,27 +43,47 @@ void eWiFi::Run() {
             if (!_client) return;
             Route(_client);
             break;
-
-        // case eWiFiState::Connected:
-        //     Talk();
-        //     break;
-
-        // case eWiFiState::Cleanup:
-        //     // Close the connection
-        //     _client.stop();
-        //     Serial.println("Client disconnected.");
-        //     Serial.println("");
-        //     _state = eWiFiState::Listening;
-        //     break;
     }
 }
 
 void eWiFi::Debug() const {
+    for (int i = 0; i < nClients; i++) {
+        _clients[i].print("data: AtPressure: ");
+        _clients[i].print(_variables.AtPressure.Get());
+        _clients[i].print("\r\n");
+
+        _clients[i].print("data: GroupSwitch: ");
+        _clients[i].print(_variables.GroupSwitch.Get());
+        _clients[i].print("\r\n");
+
+        _clients[i].print("data: TankWater: ");
+        _clients[i].print(_variables.TankWater.Get());
+        _clients[i].print("\r\n");
+        
+        _clients[i].print("data: BoilerWater: ");
+        _clients[i].print(_variables.BoilerWater.Get());
+        _clients[i].print("\r\n");
+
+        _clients[i].print("data: Pump: ");
+        _clients[i].print(_variables.Pump.Get());
+        _clients[i].print("\r\n");
+
+        _clients[i].print("data: Solenoid: ");
+        _clients[i].print(_variables.Solenoid.Get());
+        _clients[i].print("\r\n");
+
+        _clients[i].print("data: Element: ");
+        _clients[i].print(_variables.Element.Get());
+        _clients[i].print("\r\n");
+
+        _clients[i].print("\r\n");
+    }
+
     if (WiFi.status() == WL_CONNECTED) {
         Serial.print("IP address: ");
         Serial.print(WiFi.localIP());
-        Serial.print(", State: ");
-        Serial.println(static_cast<int>(_state));
+        // Serial.print(", State: ");
+        // Serial.println(static_cast<int>(_state));
     }
     else {
         Serial.println("No WiFi");
@@ -85,7 +105,7 @@ void eWiFi::SetupServer() {
 void eWiFi::Route(WiFiClient client) {
     ClientLog(client, "New Client.");
     bool success = ReadHeaders(client);
-    _path[99] = '\0'; // just in case
+    _path[MaxHeaderSize-1] = '\0'; // just in case
     if (!success) {
         ClientLog(client, "Header failure.");
         _client.stop();
@@ -105,6 +125,14 @@ void eWiFi::Route(WiFiClient client) {
             _clients[nClients++] = _client;
         }
     }
+    else {
+        Serial.print("'");
+        Serial.print(_path);
+        Serial.println("' not found.");
+        ClientLog(client, "404 Not Found.");
+        ServeError(_client, "404 Not Found");
+        _client.stop();
+    }
 }
 
 bool eWiFi::ReadHeaders(WiFiClient client) {
@@ -117,8 +145,9 @@ bool eWiFi::ReadHeaders(WiFiClient client) {
     }
 
     while (client.connected() && client.available()) {
-        // read headers
-        int nBytes = client.readBytesUntil('\n', header, MaxHeaderSize);
+        // read headers. Usually \r\n (RFC2616)
+        int nBytes = client.readBytesUntil('\r', header, MaxHeaderSize);
+        client.readBytesUntil('\n', header, 1);
         header[nBytes] = '\0';
         if (nBytes > 0) {
             ClientLog(client, header);
@@ -132,9 +161,9 @@ bool eWiFi::ReadHeaders(WiFiClient client) {
         }
         
         if (strncmp(header, "GET ", 4) == 0) {
-            strncpy(_path, header+4, MaxHeaderSize-4);
-            _path = "/"; // todo
-            ClientLog(client, _path);
+            char *endPath = strstr(header, " HTTP");
+            int endIndex = endPath == NULL ? 0 : (endPath - header);
+            strncpy(_path, header+4, endIndex-4);
         }
     }
     delete[] header;
@@ -142,38 +171,36 @@ bool eWiFi::ReadHeaders(WiFiClient client) {
 }
 
 void eWiFi::ServeHtml(WiFiClient client) {
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-type: text/html");
-    client.println("Connection: close");
-    client.println();
+    client.print("HTTP/1.1 200 OK\r\n");
+    client.print("Content-type: text/html\r\n");
+    client.print("Connection: close\r\n");
+    client.print("\r\n");
 
-    client.println("<html><body><h1>Hello World</h1></body></head>");
+    client.print("<html><body><h1>Hello World</h1></body></head>\r\n");
     // The HTTP response ends with another blank line
-    client.println();
+    client.print("\r\n");
 }
 
 void eWiFi::ServeError(WiFiClient client, const char * error) {
     client.print("HTTP/1.1 ");
-    client.println(error);
-    client.println("Content-type: text/html");
-    client.println("Connection: close");
-    client.println();
+    client.print(error);
+    client.print("\r\n");
+    client.print("Content-type: text/html\r\n");
+    client.print("Connection: close\r\n");
+    client.print("\r\n");
 
     client.print("<html><body><h1>");
     client.print(error);
-    client.println("</h1></body></head>");
-    client.println();
+    client.print("</h1></body></head>\r\n");
+    client.print("\r\n");
 }
 
 void eWiFi::ServeEventInit(WiFiClient client) {
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-type: text/event-stream");
-    client.println("Cache-Control: no-cache");
-    client.println("Connection: keep-alive");
-    client.println();
-
-    client.println("<html><body><h1>Too Many Requests</h1></body></head>");
-    client.println();
+    client.print("HTTP/1.1 200 OK\r\n");
+    client.print("Content-type: text/event-stream\r\n");
+    client.print("Cache-Control: no-cache\r\n");
+    client.print("Connection: keep-alive\r\n");
+    client.print("\r\n");
 }
 
 void eWiFi::ServeEventClients() {
@@ -182,6 +209,8 @@ void eWiFi::ServeEventClients() {
 
 void eWiFi::ClientLog(WiFiClient client, const char * msg) {
     Serial.print(client.remoteIP());
-    Serial.print(": ");
-    Serial.println(msg);
+    Serial.print(": '");
+    Serial.print(msg);
+    Serial.print("'");
+    Serial.println();
 }
