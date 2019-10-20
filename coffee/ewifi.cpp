@@ -47,6 +47,7 @@ void eWiFi::Run() {
 }
 
 void eWiFi::Debug() const {
+    // todo move from debug loop to ServeEventClients with a timer/counter rate limit
     for (int i = 0; i < nClients; i++) {
         _clients[i].print("data: AtPressure: ");
         _clients[i].print(_variables.AtPressure.Get());
@@ -84,6 +85,7 @@ void eWiFi::Debug() const {
         Serial.print(WiFi.localIP());
         // Serial.print(", State: ");
         // Serial.println(static_cast<int>(_state));
+        Serial.println();
     }
     else {
         Serial.println("No WiFi");
@@ -125,6 +127,9 @@ void eWiFi::Route(WiFiClient client) {
             _clients[nClients++] = _client;
         }
     }
+    else if (strlen((const char *)_path) == 0) {
+        // not sure why this is happening... let's try again next time around.
+    }
     else {
         Serial.print("'");
         Serial.print(_path);
@@ -147,8 +152,12 @@ bool eWiFi::ReadHeaders(WiFiClient client) {
     while (client.connected() && client.available()) {
         // read headers. Usually \r\n (RFC2616)
         int nBytes = client.readBytesUntil('\r', header, MaxHeaderSize);
-        client.readBytesUntil('\n', header, 1);
-        header[nBytes] = '\0';
+        int byte = client.peek();
+        if (byte == 10) {
+            // in case the header is not \r\n
+            client.read();
+        }
+        header[nBytes] = '\0'; // null terminate it so string manip works
         if (nBytes > 0) {
             ClientLog(client, header);
         }
