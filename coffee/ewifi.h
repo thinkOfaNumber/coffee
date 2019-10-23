@@ -9,6 +9,7 @@
 namespace idb {
 
 const int MaxHeaderSize = 200;
+const int MaxClients = 2;
 
 enum class eWiFiState {
     NoWiFi = 0,
@@ -19,28 +20,27 @@ enum class eWiFiState {
 class eWiFi : public Task {
 private:
     WiFiServer *_server;
-    WiFiClient *_clients = new WiFiClient[2];
-    WiFiClient _client;
+    WiFiClient *_clients[MaxClients];
     eWiFiState _state;
     String _header;
     Variables _variables;
-    char *_path = new char[MaxHeaderSize];
+    char _path[MaxHeaderSize];
     int nClients = 0;
 
     void CheckForWifi();
     void SetupServer();
-    void ServeEventClients();
-    void Route(WiFiClient client);
-    bool ReadHeaders(WiFiClient client);
-    void ServeHtml(WiFiClient client);
-    void ServeEventInit(WiFiClient client);
-    void ServeError(WiFiClient client, const char * error);
-    void ClientLog(WiFiClient client, const char * msg);
+    void ServeEventClients(unsigned int cycle);
+    void Route(WiFiClient &client);
+    bool ReadHeaders(WiFiClient &client);
+    void ServeHtml(WiFiClient &client);
+    void ServeEventInit(WiFiClient &client);
+    void ServeError(WiFiClient &client, const char * error);
+    void ClientLog(WiFiClient &client, const char * msg);
 
 public:
     eWiFi();
     void Setup();
-    void Run();
+    void Run(unsigned int cycle);
     void Debug() const;
 };
 

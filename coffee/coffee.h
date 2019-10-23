@@ -21,7 +21,7 @@ private:
 
 public:
   Coffee();
-  void Run();
+  void Run(unsigned int cycle);
   void Debug() const;
   void MapIn();
   void MapOut();

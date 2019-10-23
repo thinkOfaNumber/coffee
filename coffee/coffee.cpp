@@ -6,7 +6,7 @@ using namespace idb;
 
 Coffee::Coffee() : _variables() {}
 
-void Coffee::Run() {
+void Coffee::Run(unsigned int cycle) {
     MapIn();
     // 5.1
     _element = !_atPressure;

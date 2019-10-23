@@ -4,8 +4,9 @@ namespace idb {
 class Task {
     public:
     virtual void Setup();
-    virtual void Run() = 0;
+    virtual void Run(unsigned int cycle) = 0;
     virtual void Debug() const;
+    protected:
 };
 }
 #endif

@@ -17,7 +17,11 @@ const char* password = "YOUR-PASSWORD-HERE";
 
 using namespace idb;
 
-eWiFi::eWiFi() : _variables() {}
+eWiFi::eWiFi() : _variables() {
+    for (int i = 0; i < MaxClients; i++) {
+        _clients[i] = NULL;
+    }
+}
 
 void eWiFi::Setup() {
     Serial.print("Connecting to ");
@@ -27,7 +31,7 @@ void eWiFi::Setup() {
     _state = eWiFiState::NoWiFi;
 }
 
-void eWiFi::Run() {
+void eWiFi::Run(unsigned int cycle) {
     switch (_state) {
         case eWiFiState::NoWiFi:
             CheckForWifi();
@@ -38,48 +42,15 @@ void eWiFi::Run() {
             break;
 
         case eWiFiState::Listening:
-            ServeEventClients();
-            _client = _server->available();
-            if (!_client) return;
-            Route(_client);
+            ServeEventClients(cycle);
+            WiFiClient client = _server->available();
+            if (!client) return;
+            Route(client);
             break;
     }
 }
 
 void eWiFi::Debug() const {
-    // todo move from debug loop to ServeEventClients with a timer/counter rate limit
-    for (int i = 0; i < nClients; i++) {
-        _clients[i].print("data: AtPressure: ");
-        _clients[i].print(_variables.AtPressure.Get());
-        _clients[i].print("\r\n");
-
-        _clients[i].print("data: GroupSwitch: ");
-        _clients[i].print(_variables.GroupSwitch.Get());
-        _clients[i].print("\r\n");
-
-        _clients[i].print("data: TankWater: ");
-        _clients[i].print(_variables.TankWater.Get());
-        _clients[i].print("\r\n");
-        
-        _clients[i].print("data: BoilerWater: ");
-        _clients[i].print(_variables.BoilerWater.Get());
-        _clients[i].print("\r\n");
-
-        _clients[i].print("data: Pump: ");
-        _clients[i].print(_variables.Pump.Get());
-        _clients[i].print("\r\n");
-
-        _clients[i].print("data: Solenoid: ");
-        _clients[i].print(_variables.Solenoid.Get());
-        _clients[i].print("\r\n");
-
-        _clients[i].print("data: Element: ");
-        _clients[i].print(_variables.Element.Get());
-        _clients[i].print("\r\n");
-
-        _clients[i].print("\r\n");
-    }
-
     if (WiFi.status() == WL_CONNECTED) {
         Serial.print("IP address: ");
         Serial.print(WiFi.localIP());
@@ -104,27 +75,35 @@ void eWiFi::SetupServer() {
     _state = eWiFiState::Listening;
 }
 
-void eWiFi::Route(WiFiClient client) {
+void eWiFi::Route(WiFiClient &client) {
+    _path[0] = '\0';
     ClientLog(client, "New Client.");
     bool success = ReadHeaders(client);
     _path[MaxHeaderSize-1] = '\0'; // just in case
     if (!success) {
         ClientLog(client, "Header failure.");
-        _client.stop();
+        client.stop();
     }
     else if (strcmp((const char *)_path, "/") == 0) {
-        ServeHtml(_client);
-        _client.stop();
+        ServeHtml(client);
+        client.stop();
     }
     else if (strcmp((const char *)_path, "/events.sse") == 0) {
         if (nClients >= 2) {
             ClientLog(client, "429 Too Many Requests.");
-            ServeError(_client, "429 Too Many Requests");
-            _client.stop();
+            ServeError(client, "429 Too Many Requests");
+            client.stop();
         }
         else {
-            ServeEventInit(_client);
-            _clients[nClients++] = _client;
+            ClientLog(client, "serving events to new client");
+            ServeEventInit(client);
+            for (int i = 0; i < MaxClients; i++) {
+                if (_clients[i] == NULL) {
+                    _clients[i] = new WiFiClient(client);
+                    nClients++;
+                    break;
+                }
+            }
         }
     }
     else if (strlen((const char *)_path) == 0) {
@@ -135,12 +114,12 @@ void eWiFi::Route(WiFiClient client) {
         Serial.print(_path);
         Serial.println("' not found.");
         ClientLog(client, "404 Not Found.");
-        ServeError(_client, "404 Not Found");
-        _client.stop();
+        ServeError(client, "404 Not Found");
+        client.stop();
     }
 }
 
-bool eWiFi::ReadHeaders(WiFiClient client) {
+bool eWiFi::ReadHeaders(WiFiClient &client) {
     char *header = new char[MaxHeaderSize+1];
     _path[0] = '\0';
 
@@ -173,13 +152,18 @@ bool eWiFi::ReadHeaders(WiFiClient client) {
             char *endPath = strstr(header, " HTTP");
             int endIndex = endPath == NULL ? 0 : (endPath - header);
             strncpy(_path, header+4, endIndex-4);
+            _path[endIndex-4] = '\0';
+            Serial.print("new path is '");
+            Serial.print(_path);
+            Serial.println("'");
         }
     }
     delete[] header;
     return true;
 }
 
-void eWiFi::ServeHtml(WiFiClient client) {
+void eWiFi::ServeHtml(WiFiClient &client) {
+    ClientLog(client, "200 OK");
     client.print("HTTP/1.1 200 OK\r\n");
     client.print("Content-type: text/html\r\n");
     client.print("Connection: close\r\n");
@@ -190,7 +174,7 @@ void eWiFi::ServeHtml(WiFiClient client) {
     client.print("\r\n");
 }
 
-void eWiFi::ServeError(WiFiClient client, const char * error) {
+void eWiFi::ServeError(WiFiClient &client, const char * error) {
     client.print("HTTP/1.1 ");
     client.print(error);
     client.print("\r\n");
@@ -204,7 +188,7 @@ void eWiFi::ServeError(WiFiClient client, const char * error) {
     client.print("\r\n");
 }
 
-void eWiFi::ServeEventInit(WiFiClient client) {
+void eWiFi::ServeEventInit(WiFiClient &client) {
     client.print("HTTP/1.1 200 OK\r\n");
     client.print("Content-type: text/event-stream\r\n");
     client.print("Cache-Control: no-cache\r\n");
@@ -212,11 +196,65 @@ void eWiFi::ServeEventInit(WiFiClient client) {
     client.print("\r\n");
 }
 
-void eWiFi::ServeEventClients() {
-    // nothing for now
+void eWiFi::ServeEventClients(unsigned int cycle) {
+    if (cycle % 20 != 0) {
+        return;
+    }
+    
+    for (int i = 0; i < MaxClients; i++) {
+        if (_clients[i] == NULL) {
+            continue;
+        }
+        if (!_clients[i]->connected()) {
+            ClientLog(*_clients[i], "disconnected");
+            delete _clients[i];
+            _clients[i] = NULL;
+            nClients--;
+            continue;
+        }
+    }
+    
+    for (int i = 0; i < MaxClients; i++) {
+        if (_clients[i] == NULL) {
+            continue;
+        }
+        Serial.print("writing data for cycle ");
+        Serial.print(cycle);
+        Serial.print(" to client ");
+        Serial.println(i+1);
+        _clients[i]->print("data: AtPressure: ");
+        _clients[i]->print(_variables.AtPressure.Get());
+        _clients[i]->print("\r\n");
+
+        _clients[i]->print("data: GroupSwitch: ");
+        _clients[i]->print(_variables.GroupSwitch.Get());
+        _clients[i]->print("\r\n");
+
+        _clients[i]->print("data: TankWater: ");
+        _clients[i]->print(_variables.TankWater.Get());
+        _clients[i]->print("\r\n");
+        
+        _clients[i]->print("data: BoilerWater: ");
+        _clients[i]->print(_variables.BoilerWater.Get());
+        _clients[i]->print("\r\n");
+
+        _clients[i]->print("data: Pump: ");
+        _clients[i]->print(_variables.Pump.Get());
+        _clients[i]->print("\r\n");
+
+        _clients[i]->print("data: Solenoid: ");
+        _clients[i]->print(_variables.Solenoid.Get());
+        _clients[i]->print("\r\n");
+
+        _clients[i]->print("data: Element: ");
+        _clients[i]->print(_variables.Element.Get());
+        _clients[i]->print("\r\n");
+
+        _clients[i]->print("\r\n");
+    }
 }
 
-void eWiFi::ClientLog(WiFiClient client, const char * msg) {
+void eWiFi::ClientLog(WiFiClient &client, const char * msg) {
     Serial.print(client.remoteIP());
     Serial.print(": '");
     Serial.print(msg);

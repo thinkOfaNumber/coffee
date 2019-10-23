@@ -12,7 +12,7 @@ namespace idb {
 
         public:
         Outputs();
-        void Run();
+        void Run(unsigned int cycle);
     };
 }
 

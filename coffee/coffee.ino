@@ -24,7 +24,7 @@ Task *tasks[numTasks] = {
 };
 Timer controlLoop(100);
 Timer debugLoop(1000);
-uint32 cycle = 0;
+unsigned int cycle = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -57,7 +57,7 @@ void loop() {
   if (controlLoop.Triggered()) {
     cycle++;
     for (int i = 0; i < numTasks; i++) {
-      tasks[i]->Run();
+      tasks[i]->Run(cycle);
     }
   }
 

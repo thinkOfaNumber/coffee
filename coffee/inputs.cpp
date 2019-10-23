@@ -7,7 +7,7 @@ using namespace idb;
 
 Inputs::Inputs() : _variables() { }
 
-void Inputs::Run() {
+void Inputs::Run(unsigned int cycle) {
     // pass the actual inputs through the Variable class
     _variables.AtPressure._value = digitalRead(AT_PRESSURE);
     _variables.GroupSwitch._value = !digitalRead(GROUP_SWITCH);
